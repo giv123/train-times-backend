@@ -19,6 +19,13 @@ app.get('/api/train-times/:stationCode', async (req, res) => {
       },
     });
 
+    // Check if response is OK before parsing JSON
+    if (!response.ok) {
+      const errorText = await response.text(); // Read plain text error message
+      console.error('RTT API error:', errorText);
+      return res.status(response.status).json({ error: errorText });
+    }
+
     const data = await response.json();
     res.json(data);
   } catch (error) {
