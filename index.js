@@ -14,7 +14,7 @@ app.use(cors({
 app.use(express.json());
 
 app.get('/api/train-times/:stationCode', async (req, res) => {
-  const station = req.params.stationCode.toUpperCase(); // Ensure uppercase
+  const station = req.params.stationCode;
   const url = `https://api.rtt.io/api/v1/json/search/${station}`;
 
   const username = process.env.RTT_USER;
@@ -24,9 +24,7 @@ app.get('/api/train-times/:stationCode', async (req, res) => {
 
   try {
     const response = await fetch(url, {
-      headers: {
-        Authorization: auth,
-      },
+      headers: { Authorization: auth },
     });
 
     if (!response.ok) {
@@ -35,31 +33,27 @@ app.get('/api/train-times/:stationCode', async (req, res) => {
 
     const data = await response.json();
 
-    if (!data.search || data.search.length === 0) {
-      return res.status(404).json({ error: 'Station not found' });
-    }
-
-    const stationData = data.search[0];
-    const trainServices = stationData.trainServices || [];
-
-    if (trainServices.length === 0) {
-      return res.status(404).json({ error: 'No train services found' });
-    }
+    // Extract station data and services
+    const stationData = data;
+    const trainServices = stationData.services || [];
 
     // Simplify the response
-    const services = trainServices.map(service => ({
-      serviceID: service.serviceID,
-      scheduledTime: service.std,
-      expectedTime: service.etd,
-      platform: service.platform || 'N/A',
-      destination: service.destination.map(d => d.location.name).join(', '),
-      operator: service.operator,
-      status: service.etd === 'On time' ? 'On time' : service.etd
-    }));
+    const services = trainServices.map(service => {
+      const loc = service.locationDetail || {};
+      return {
+        serviceID: service.serviceUid || 'N/A',
+        scheduledTime: loc.gbttBookedDeparture || 'N/A',
+        expectedTime: loc.realtimeDeparture || loc.gbttBookedDeparture || 'N/A',
+        platform: loc.platform || 'N/A',
+        destination: loc.destination?.map(d => d.description).join(', ') || 'Unknown',
+        operator: service.atocName || 'Unknown',
+        status: loc.realtimeDepartureActual ? 'On time' : 'Delayed',
+      };
+    });
 
     res.json({
-      station: stationData.location.name,
-      crs: stationData.location.crs,
+      station: stationData.location?.name || 'Unknown',
+      crs: stationData.location?.crs || 'N/A',
       services,
     });
 
