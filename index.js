@@ -24,7 +24,9 @@ app.get('/api/train-times/:stationCode', async (req, res) => {
 
   try {
     const response = await fetch(url, {
-      headers: { Authorization: auth },
+      headers: {
+        Authorization: auth,
+      },
     });
 
     if (!response.ok) {
@@ -33,30 +35,8 @@ app.get('/api/train-times/:stationCode', async (req, res) => {
 
     const data = await response.json();
 
-    // Extract station data and services
-    const stationData = data;
-    const trainServices = stationData.services || [];
-
-    // Simplify the response
-    const services = trainServices.map(service => {
-      const loc = service.locationDetail || {};
-      return {
-        serviceID: service.serviceUid || 'N/A',
-        scheduledTime: loc.gbttBookedDeparture || 'N/A',
-        expectedTime: loc.realtimeDeparture || loc.gbttBookedDeparture || 'N/A',
-        platform: loc.platform || 'N/A',
-        destination: loc.destination?.map(d => d.description).join(', ') || 'Unknown',
-        operator: service.atocName || 'Unknown',
-        status: loc.realtimeDepartureActual ? 'On time' : 'Delayed',
-      };
-    });
-
-    res.json({
-      station: stationData.location?.name || 'Unknown',
-      crs: stationData.location?.crs || 'N/A',
-      services,
-    });
-
+    // Send full data without simplifying
+    res.json(data);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
