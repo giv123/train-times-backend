@@ -6,6 +6,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(cors({
+  origin: 'https://giv123.github.io/train-times-frontend/'
+}));
+
 app.use(express.json());
 
 app.get('/api/train-times/:stationCode', async (req, res) => {
