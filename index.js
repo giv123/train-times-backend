@@ -12,25 +12,26 @@ app.get('/api/train-times/:stationCode', async (req, res) => {
   const station = req.params.stationCode;
   const url = `https://api.rtt.io/api/v1/json/search/${station}`;
 
+  const username = process.env.RTT_USER;
+  const password = process.env.RTT_PASS;
+
+  const auth = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
+
   try {
     const response = await fetch(url, {
       headers: {
-        Authorization: 'Basic ' + Buffer.from(`${process.env.RTT_USER}:${process.env.RTT_PASS}`).toString('base64'),
+        Authorization: auth,
       },
     });
 
-    // Check if response is OK before parsing JSON
     if (!response.ok) {
-      const errorText = await response.text(); // Read plain text error message
-      console.error('RTT API error:', errorText);
-      return res.status(response.status).json({ error: errorText });
+      return res.status(response.status).json({ error: await response.text() });
     }
 
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    console.error('Error fetching train times:', error);
-    res.status(500).json({ error: 'Failed to fetch train times' });
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
 
