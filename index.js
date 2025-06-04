@@ -8,7 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({
-  origin: 'https://giv123.github.io/train-times-frontend/'
+  origin: 'https://giv123.github.io'
 }));
 
 app.use(express.json());
